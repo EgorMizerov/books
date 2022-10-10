@@ -253,7 +253,7 @@ func (self *HandlerTests) TestGetBookErrorIfServiceFailed() {
 	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
 	self.serviceMock.
 		On("GetBook", request.Context(), self.book.ID).
-		Return(nil, self.testError)
+		Return(models.Book{}, self.testError)
 
 	self.handler.GetBook(response, request)
 
