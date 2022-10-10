@@ -129,7 +129,7 @@ func (self *Handler) GetAuthorsBooks(response http.ResponseWriter, request *http
 
 	if books == nil {
 		response.WriteHeader(http.StatusOK)
-		response.Write([]byte("[]"))
+		_, _ = response.Write([]byte("[]"))
 		return
 	}
 	booksJson, err := json.Marshal(books)
@@ -138,7 +138,7 @@ func (self *Handler) GetAuthorsBooks(response http.ResponseWriter, request *http
 		return
 	}
 	response.WriteHeader(http.StatusOK)
-	response.Write(booksJson)
+	_, _ = response.Write(booksJson)
 }
 
 type CreateBookRequestBody struct {
@@ -190,5 +190,5 @@ func (self *Handler) GetBook(response http.ResponseWriter, request *http.Request
 		return
 	}
 	response.WriteHeader(http.StatusOK)
-	response.Write(bookJson)
+	_, _ = response.Write(bookJson)
 }
