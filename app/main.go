@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-playground/validator/v10"
-	_ "github.com/jackc/pgx/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 
@@ -20,13 +19,11 @@ import (
 	"github.com/egormizerov/books/pkg/wrappers"
 )
 
-func init() {
+func main() {
 	if err := godotenv.Load(); err != nil {
 		logrus.Warn("No .env file")
 	}
-}
 
-func main() {
 	appConfig := config.NewAppConfig()
 	logger := log.NewLogrusLogger(appConfig.LoggerEnableJson, appConfig.LoggerLogLevel)
 	databaseConnection, err := database.ConnectToDatabase(&wrappers.SimpleSqlxWrapper{}, database.ConnectConfig{

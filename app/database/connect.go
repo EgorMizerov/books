@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 
+	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/egormizerov/books/pkg/wrappers"
