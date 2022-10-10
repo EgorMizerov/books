@@ -26,6 +26,8 @@ func (self *AppConfigTests) TestNewAppConfig() {
 	databaseHost := "test_host"
 	databasePort := "test_port"
 	databaseDatabase := "test_database"
+	serverPort := "test_port"
+	serverHost := "test_host"
 	self.NoError(os.Setenv(configKeyLoggerLogLevel.String(), strconv.Itoa(int(loggerLogLevel))))
 	self.NoError(os.Setenv(configKeyLoggerEnableJson.String(), strconv.FormatBool(loggerEnableJson)))
 	self.NoError(os.Setenv(configKeyDatabaseUser.String(), databaseUser))
@@ -33,6 +35,8 @@ func (self *AppConfigTests) TestNewAppConfig() {
 	self.NoError(os.Setenv(configKeyDatabaseHost.String(), databaseHost))
 	self.NoError(os.Setenv(configKeyDatabasePort.String(), databasePort))
 	self.NoError(os.Setenv(configKeyDatabaseDatabase.String(), databaseDatabase))
+	self.NoError(os.Setenv(configKeyServerPort.String(), serverPort))
+	self.NoError(os.Setenv(configKeyServerHost.String(), serverHost))
 
 	result := NewAppConfig()
 
@@ -44,6 +48,8 @@ func (self *AppConfigTests) TestNewAppConfig() {
 		DatabaseHost:     databaseHost,
 		DatabasePort:     databasePort,
 		DatabaseDatabase: databaseDatabase,
+		ServerPort:       serverPort,
+		ServerHost:       serverHost,
 	}, result)
 }
 

@@ -4,8 +4,8 @@ package mocks
 
 import (
 	context "context"
-	models "github.com/egormizerov/books/app/models"
 
+	models "github.com/egormizerov/books/app/models"
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"

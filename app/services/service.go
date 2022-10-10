@@ -11,6 +11,7 @@ import (
 	"github.com/egormizerov/books/pkg/wrappers"
 )
 
+//go:generate mockery --name=DatabaseClient
 type DatabaseClient interface {
 	CreateAuthor(ctx context.Context, author models.Author) error
 	CreateBook(ctx context.Context, book models.Book) error

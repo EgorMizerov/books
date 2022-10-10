@@ -19,6 +19,9 @@ const (
 	configKeyDatabaseHost     = configKey("DatabaseHost")
 	configKeyDatabasePort     = configKey("DatabasePort")
 	configKeyDatabaseDatabase = configKey("DatabaseDatabase")
+
+	configKeyServerPort = configKey("ServerPort")
+	configKeyServerHost = configKey("ServerHost")
 )
 
 type configKey string
@@ -36,6 +39,9 @@ type AppConfig struct {
 	DatabaseHost     string
 	DatabasePort     string
 	DatabaseDatabase string
+
+	ServerPort string
+	ServerHost string
 }
 
 func NewAppConfig() AppConfig {
@@ -44,9 +50,12 @@ func NewAppConfig() AppConfig {
 		LoggerEnableJson: env.GetBool(configKeyLoggerEnableJson.String(), false),
 
 		DatabaseUser:     env.GetString(configKeyDatabaseUser.String(), "postgres"),
-		DatabasePassword: env.GetString(configKeyDatabasePassword.String(), ""),
+		DatabasePassword: env.GetString(configKeyDatabasePassword.String(), "postgres"),
 		DatabaseHost:     env.GetString(configKeyDatabaseHost.String(), "localhost"),
 		DatabasePort:     env.GetString(configKeyDatabasePort.String(), "5432"),
 		DatabaseDatabase: env.GetString(configKeyDatabaseDatabase.String(), "postgres"),
+
+		ServerPort: env.GetString(configKeyServerPort.String(), "8080"),
+		ServerHost: env.GetString(configKeyServerHost.String(), "localhost"),
 	}
 }

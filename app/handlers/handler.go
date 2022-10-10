@@ -30,6 +30,7 @@ var (
 	EndpointGetBookMatcher         = regexp.MustCompile("^/api/books/(.{36})$")
 )
 
+//go:generate mockery --name=Service
 type Service interface {
 	CreateAuthor(ctx context.Context, authorName string) error
 	CreateBook(ctx context.Context, title string, authorId uuid.UUID) error

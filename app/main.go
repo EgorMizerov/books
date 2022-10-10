@@ -1,7 +1,8 @@
 package main
 
 import (
-	"net/http"
+	"context"
+	"fmt"
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/jackc/pgx/stdlib"
@@ -15,6 +16,7 @@ import (
 	"github.com/egormizerov/books/app/services"
 	"github.com/egormizerov/books/pkg/log"
 	"github.com/egormizerov/books/pkg/process"
+	"github.com/egormizerov/books/pkg/server"
 	"github.com/egormizerov/books/pkg/wrappers"
 )
 
@@ -43,14 +45,21 @@ func main() {
 	databaseClient := client.NewDatabaseClient(databaseConnection)
 	service := services.NewService(databaseClient, &wrappers.SimpleUUIDWrapper{})
 	handler := handlers.NewHandler(logger, service, validator.New())
-
+	serverHost := fmt.Sprintf("%s:%s", appConfig.ServerHost, appConfig.ServerPort)
+	httpServer := server.NewServer(serverHost, handler)
 	go func() {
-		if err = http.ListenAndServe(":8080", handler); err != nil {
+		if err = httpServer.Listen(); err != nil {
 			logger.
 				WithError(err).
-				Fatal("Server unexpectedly stopped")
+				Fatal("server unexpectedly stopped")
 		}
 	}()
-	logger.Info("Server has started!")
+	logger.Info("server has started")
+
 	process.WaitForTermination()
+	if err = httpServer.Shutdown(context.Background()); err != nil {
+		logger.
+			WithError(err).
+			Fatal("failed to shutdown server")
+	}
 }
