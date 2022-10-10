@@ -17,6 +17,7 @@ import (
 var (
 	ErrInvalidInputBody     = "Invalid input body."
 	ErrInvalidPathVariables = "Invalid path variables."
+	ErrMethodNotAllowed     = "Method not allowed."
 
 	ErrCreateAuthor    = "We could not create new author. Please try again."
 	ErrGetAuthorsBooks = "We could not get author's books. Please try again."
@@ -73,12 +74,12 @@ func (self *Handler) ServeHTTP(response http.ResponseWriter, request *http.Reque
 			return
 		}
 	case http.MethodOptions:
-		response.WriteHeader(http.StatusMethodNotAllowed)
+		response.Header().Set("Allow", "GET, POST, OPTIONS")
 		response.WriteHeader(http.StatusNoContent)
 		return
 	default:
 		response.Header().Set("Allow", "GET, POST, OPTIONS")
-		http.Error(response, "method not allowed", http.StatusMethodNotAllowed)
+		http.Error(response, ErrMethodNotAllowed, http.StatusMethodNotAllowed)
 		return
 	}
 

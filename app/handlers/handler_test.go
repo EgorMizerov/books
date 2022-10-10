@@ -72,8 +72,92 @@ func (self *HandlerTests) TestNewHandler() {
 	}, result)
 }
 
+func (self *HandlerTests) TestServeHTTPCreateBook() {
+	requestBody := CreateBookRequestBody{
+		Title:    self.book.Title,
+		AuthorID: self.book.Author.ID.String(),
+	}
+	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateBook, requestBody)
+	self.serviceMock.
+		On("CreateBook", self.requestWithLogger(request).Context(), requestBody.Title, uuid.MustParse(requestBody.AuthorID)).
+		Return(nil)
+
+	self.handler.ServeHTTP(response, request)
+
+	self.Equal(http.StatusCreated, response.Code)
+}
+
+func (self *HandlerTests) TestServeHTTPCreateAuthor() {
+	requestBody := CreateAuthorRequestBody{
+		Name: self.author.Name,
+	}
+	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateAuthor, requestBody)
+	self.serviceMock.
+		On("CreateAuthor", self.requestWithLogger(request).Context(), requestBody.Name).
+		Return(nil)
+
+	self.handler.ServeHTTP(response, request)
+
+	self.Equal(http.StatusCreated, response.Code)
+}
+
+func (self *HandlerTests) TestServeHTTPGetBook() {
+	requestEndpoint := fmt.Sprintf(EndpointGetBook, self.book.ID.String())
+	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	self.serviceMock.
+		On("GetBook", self.requestWithLogger(request).Context(), self.book.ID).
+		Return(self.book, nil)
+
+	self.handler.ServeHTTP(response, request)
+
+	self.Equal(http.StatusOK, response.Code)
+	self.Contains(response.Body.String(), string(self.mustMarshal(self.book)))
+}
+
+func (self *HandlerTests) TestServeHTTPGetAuthorsBooks() {
+	books := []models.Book{self.book}
+	requestEndpoint := fmt.Sprintf(EndpointGetAuthorsBooks, self.author.ID.String())
+	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	self.serviceMock.
+		On("GetAuthorsBooks", self.requestWithLogger(request).Context(), self.author.ID).
+		Return(books, nil)
+
+	self.handler.ServeHTTP(response, request)
+
+	self.Equal(http.StatusOK, response.Code)
+	self.Contains(response.Body.String(), string(self.mustMarshal(books)))
+}
+
+func (self *HandlerTests) TestServerHTTPOptions() {
+	response, request := self.getRequestAndResponse(http.MethodOptions, "/", nil)
+
+	self.handler.ServeHTTP(response, request)
+
+	self.Equal("GET, POST, OPTIONS", response.Header().Get("Allow"))
+	self.Equal(http.StatusNoContent, response.Code)
+}
+
+func (self *HandlerTests) TestServerHTTPErrorIfMethodNotAllowed() {
+	response, request := self.getRequestAndResponse(http.MethodPut, "/", nil)
+
+	self.handler.ServeHTTP(response, request)
+
+	self.Equal("GET, POST, OPTIONS", response.Header().Get("Allow"))
+	self.Equal(http.StatusMethodNotAllowed, response.Code)
+	self.Contains(response.Body.String(), ErrMethodNotAllowed)
+}
+
+func (self *HandlerTests) TestServerHTTPNotFound() {
+	response, request := self.getRequestAndResponse(http.MethodGet, "/", nil)
+
+	self.handler.ServeHTTP(response, request)
+
+	self.Equal(http.StatusNotFound, response.Code)
+	self.Contains(response.Body.String(), "404 page not found")
+}
+
 func (self *HandlerTests) TestCreateAuthorErrorIfJsonDecodeFailed() {
-	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateAuthor, "")
+	response, request := self.getRequestAndResponseWithLogger(http.MethodPost, EndpointCreateAuthor, "")
 
 	self.handler.CreateAuthor(response, request)
 
@@ -82,7 +166,7 @@ func (self *HandlerTests) TestCreateAuthorErrorIfJsonDecodeFailed() {
 }
 
 func (self *HandlerTests) TestCreateAuthorErrorIfValidateFailed() {
-	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateAuthor, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodPost, EndpointCreateAuthor, nil)
 
 	self.handler.CreateAuthor(response, request)
 
@@ -94,7 +178,7 @@ func (self *HandlerTests) TestCreateAuthorErrorIfServiceFailed() {
 	requestBody := CreateAuthorRequestBody{
 		Name: "test_name",
 	}
-	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateAuthor, requestBody)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodPost, EndpointCreateAuthor, requestBody)
 	self.serviceMock.
 		On("CreateAuthor", request.Context(), requestBody.Name).
 		Return(self.testError)
@@ -109,7 +193,7 @@ func (self *HandlerTests) TestCreateAuthor() {
 	requestBody := CreateAuthorRequestBody{
 		Name: "test_name",
 	}
-	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateAuthor, requestBody)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodPost, EndpointCreateAuthor, requestBody)
 	self.serviceMock.
 		On("CreateAuthor", request.Context(), requestBody.Name).
 		Return(nil)
@@ -121,7 +205,7 @@ func (self *HandlerTests) TestCreateAuthor() {
 
 func (self *HandlerTests) TestGetAuthorsBooksErrorIfInvalidInput() {
 	requestEndpoint := fmt.Sprintf(EndpointGetAuthorsBooks, "")
-	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodGet, requestEndpoint, nil)
 
 	self.handler.GetAuthorsBooks(response, request)
 
@@ -131,7 +215,7 @@ func (self *HandlerTests) TestGetAuthorsBooksErrorIfInvalidInput() {
 
 func (self *HandlerTests) TestGetAuthorsBooksErrorIfParseUUIDFailed() {
 	requestEndpoint := fmt.Sprintf(EndpointGetAuthorsBooks, "b9bac125+94e7+4c4b+8df2+6cd055402bcc")
-	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodGet, requestEndpoint, nil)
 
 	self.handler.GetAuthorsBooks(response, request)
 
@@ -141,7 +225,7 @@ func (self *HandlerTests) TestGetAuthorsBooksErrorIfParseUUIDFailed() {
 
 func (self *HandlerTests) TestGetAuthorsBooksErrorIfGetAuthorsBooksFailed() {
 	requestEndpoint := fmt.Sprintf(EndpointGetAuthorsBooks, self.author.ID.String())
-	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodGet, requestEndpoint, nil)
 	self.serviceMock.
 		On("GetAuthorsBooks", request.Context(), self.author.ID).
 		Return(nil, self.testError)
@@ -154,7 +238,7 @@ func (self *HandlerTests) TestGetAuthorsBooksErrorIfGetAuthorsBooksFailed() {
 
 func (self *HandlerTests) TestGetAuthorsBooksIfGetAuthorsBooksReturnsEmptyBooks() {
 	requestEndpoint := fmt.Sprintf(EndpointGetAuthorsBooks, self.author.ID.String())
-	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodGet, requestEndpoint, nil)
 	self.serviceMock.
 		On("GetAuthorsBooks", request.Context(), self.author.ID).
 		Return([]models.Book{}, nil)
@@ -168,7 +252,7 @@ func (self *HandlerTests) TestGetAuthorsBooksIfGetAuthorsBooksReturnsEmptyBooks(
 func (self *HandlerTests) TestGetAuthorsBooks() {
 	books := []models.Book{self.book}
 	requestEndpoint := fmt.Sprintf(EndpointGetAuthorsBooks, self.author.ID.String())
-	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodGet, requestEndpoint, nil)
 	self.serviceMock.
 		On("GetAuthorsBooks", request.Context(), self.author.ID).
 		Return(books, nil)
@@ -180,7 +264,7 @@ func (self *HandlerTests) TestGetAuthorsBooks() {
 }
 
 func (self *HandlerTests) TestCreateBookErrorIfJsonDecodeFailed() {
-	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateBook, "")
+	response, request := self.getRequestAndResponseWithLogger(http.MethodPost, EndpointCreateBook, "")
 
 	self.handler.CreateBook(response, request)
 
@@ -189,7 +273,7 @@ func (self *HandlerTests) TestCreateBookErrorIfJsonDecodeFailed() {
 }
 
 func (self *HandlerTests) TestCreateBookErrorIfValidateFailed() {
-	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateBook, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodPost, EndpointCreateBook, nil)
 
 	self.handler.CreateBook(response, request)
 
@@ -202,7 +286,7 @@ func (self *HandlerTests) TestCreateBookErrorIfServiceFailed() {
 		Title:    self.book.Title,
 		AuthorID: self.book.Author.ID.String(),
 	}
-	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateBook, requestBody)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodPost, EndpointCreateBook, requestBody)
 	self.serviceMock.
 		On("CreateBook", request.Context(), requestBody.Title, uuid.MustParse(requestBody.AuthorID)).
 		Return(self.testError)
@@ -218,7 +302,7 @@ func (self *HandlerTests) TestCreateBook() {
 		Title:    self.book.Title,
 		AuthorID: self.book.Author.ID.String(),
 	}
-	response, request := self.getRequestAndResponse(http.MethodPost, EndpointCreateBook, requestBody)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodPost, EndpointCreateBook, requestBody)
 	self.serviceMock.
 		On("CreateBook", request.Context(), requestBody.Title, uuid.MustParse(requestBody.AuthorID)).
 		Return(nil)
@@ -230,7 +314,7 @@ func (self *HandlerTests) TestCreateBook() {
 
 func (self *HandlerTests) TestGetBookErrorIfInvalidInput() {
 	requestEndpoint := fmt.Sprintf(EndpointGetBook, "")
-	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodGet, requestEndpoint, nil)
 
 	self.handler.GetBook(response, request)
 
@@ -240,7 +324,7 @@ func (self *HandlerTests) TestGetBookErrorIfInvalidInput() {
 
 func (self *HandlerTests) TestGetBookErrorIfParseUUIDFailed() {
 	requestEndpoint := fmt.Sprintf(EndpointGetBook, "b9bac125+94e7+4c4b+8df2+6cd055402bcc")
-	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodGet, requestEndpoint, nil)
 
 	self.handler.GetBook(response, request)
 
@@ -250,7 +334,7 @@ func (self *HandlerTests) TestGetBookErrorIfParseUUIDFailed() {
 
 func (self *HandlerTests) TestGetBookErrorIfServiceFailed() {
 	requestEndpoint := fmt.Sprintf(EndpointGetBook, self.book.ID.String())
-	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodGet, requestEndpoint, nil)
 	self.serviceMock.
 		On("GetBook", request.Context(), self.book.ID).
 		Return(models.Book{}, self.testError)
@@ -263,7 +347,7 @@ func (self *HandlerTests) TestGetBookErrorIfServiceFailed() {
 
 func (self *HandlerTests) TestGetBook() {
 	requestEndpoint := fmt.Sprintf(EndpointGetBook, self.book.ID.String())
-	response, request := self.getRequestAndResponse(http.MethodGet, requestEndpoint, nil)
+	response, request := self.getRequestAndResponseWithLogger(http.MethodGet, requestEndpoint, nil)
 	self.serviceMock.
 		On("GetBook", request.Context(), self.book.ID).
 		Return(self.book, nil)
@@ -276,8 +360,14 @@ func (self *HandlerTests) TestGetBook() {
 
 func (self *HandlerTests) getRequestAndResponse(httpMethod string, endpoint string, body any) (*httptest.ResponseRecorder, *http.Request) {
 	requestBodyReader := bytes.NewReader(self.mustMarshal(body))
-	request := self.requestWithLogger(httptest.NewRequest(httpMethod, endpoint, requestBodyReader))
+	request := httptest.NewRequest(httpMethod, endpoint, requestBodyReader)
 	response := httptest.NewRecorder()
+	return response, request
+}
+
+func (self *HandlerTests) getRequestAndResponseWithLogger(httpMethod string, endpoint string, body any) (*httptest.ResponseRecorder, *http.Request) {
+	response, request := self.getRequestAndResponse(httpMethod, endpoint, body)
+	request = self.requestWithLogger(request)
 	return response, request
 }
 
