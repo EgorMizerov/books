@@ -13,7 +13,7 @@ import (
 	"github.com/egormizerov/books/app/database/client"
 	"github.com/egormizerov/books/app/handlers"
 	"github.com/egormizerov/books/app/services"
-	pkglog "github.com/egormizerov/books/pkg/log"
+	"github.com/egormizerov/books/pkg/log"
 	"github.com/egormizerov/books/pkg/process"
 	"github.com/egormizerov/books/pkg/wrappers"
 )
@@ -26,7 +26,7 @@ func init() {
 
 func main() {
 	appConfig := config.NewAppConfig()
-	logger := pkglog.NewLogrusLogger(appConfig.LoggerEnableJson, appConfig.LoggerLogLevel)
+	logger := log.NewLogrusLogger(appConfig.LoggerEnableJson, appConfig.LoggerLogLevel)
 	databaseConnection, err := database.ConnectToDatabase(&wrappers.SimpleSqlxWrapper{}, database.ConnectConfig{
 		User:     appConfig.DatabaseUser,
 		Password: appConfig.DatabasePassword,
